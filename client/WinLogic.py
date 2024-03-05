@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
 
 from Constant import CityCode
 from WinLayout import WindowLayout
-from SqlUtil import search_by_id
+from SqlUtil import search_by_id, init_conn
 from Dispatcher import dataSaver, dataExporter
 
 
@@ -25,14 +25,22 @@ class WindowLogic(QMainWindow, WindowLayout):
         self.flush_button.clicked.connect(self.flush_data)  # 刷新数据按钮
         self.export_button.clicked.connect(self.export_data)  # 导出数据按钮
 
+        if not init_conn():
+            self.dataBase_status = False
+        else:
+            self.dataBase_status = True
+
     # ================================== 数据查询 ================================== #
     def search_data(self):
         QApplication.processEvents()
         city_name = self.select_city_comboBox.currentText()
         city_id = CityCode[city_name]
         data = self.select_day_comboBox.currentText()
-        self.data = search_by_id(str(city_id), data)[0]
-        self.make_text()
+        if not self.dataBase_status:
+            self.show_label("请先启动数据库,再点击刷新")
+        else:
+            self.data = search_by_id(str(city_id), data)[0]
+            self.make_text()
 
     def make_text(self):
         if self.data == ():
@@ -48,12 +56,15 @@ class WindowLogic(QMainWindow, WindowLayout):
 
     # ================================== 数据刷新 ================================== #
     def flush_data(self):
-        self.show_label("刷新中，请稍后")
-        self.flush_button.setEnabled(False)
-        self.search_button.setEnabled(False)
-        self.export_button.setEnabled(False)
-        self.flush_thread.signal.connect(self.flush_callback)
-        self.flush_thread.start()
+        if not init_conn():
+            self.show_label("请先启动数据库,再点击刷新")
+        else:
+            self.show_label("刷新中，请稍后")
+            self.flush_button.setEnabled(False)
+            self.search_button.setEnabled(False)
+            self.export_button.setEnabled(False)
+            self.flush_thread.signal.connect(self.flush_callback)
+            self.flush_thread.start()
 
     def flush_callback(self, msg):
         self.result_label.setText(msg)
@@ -63,14 +74,17 @@ class WindowLogic(QMainWindow, WindowLayout):
 
     # ================================== 数据导出 ================================== #
     def export_data(self):
-        self.export_path = QFileDialog.getExistingDirectory(self, '请选择导出文件夹的目录')
-        self.show_label("导出中，请稍后")
-        self.flush_button.setEnabled(False)
-        self.search_button.setEnabled(False)
-        self.export_button.setEnabled(False)
-        self.export_thread = ExportDataThread(self.export_path)
-        self.export_thread.signal.connect(self.export_callback)
-        self.export_thread.start()
+        if not self.dataBase_status:
+            self.show_label("请先启动数据库,再点击刷新")
+        else:
+            self.export_path = QFileDialog.getExistingDirectory(self, '请选择导出文件夹的目录')
+            self.show_label("导出中，请稍后")
+            self.flush_button.setEnabled(False)
+            self.search_button.setEnabled(False)
+            self.export_button.setEnabled(False)
+            self.export_thread = ExportDataThread(self.export_path)
+            self.export_thread.signal.connect(self.export_callback)
+            self.export_thread.start()
 
     def export_callback(self, msg):
         self.result_label.setText(msg)

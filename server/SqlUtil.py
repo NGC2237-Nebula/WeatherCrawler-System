@@ -3,15 +3,18 @@ import pymysql
 
 
 def init_conn():
-    conn = pymysql.connect(
-        host="127.0.0.1",  # 数据库的IP地址
-        user="root",  # 数据库用户名称
-        password="root",  # 数据库用户密码
-        db="db_study",  # 数据库名称
-        port=3306,  # 数据库端口名称
-        charset="utf8"  # 数据库的编码方式
-    )
-    return conn
+    try:
+        conn = pymysql.connect(
+            host="127.0.0.1",  # 数据库的IP地址
+            user="root",  # 数据库用户名称
+            password="root",  # 数据库用户密码
+            db="db_study",  # 数据库名称
+            port=3306,  # 数据库端口名称
+            charset="utf8"  # 数据库的编码方式
+        )
+        return conn
+    except:
+        return None
 
 
 def execute_with_bool(sql_str, args=()):
